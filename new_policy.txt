@@ -1,0 +1,4 @@
+Employee attendance starts at 9 AM.
+Employees receive 15 days of leave.
+Company database uses multi factor authentication.
+Unauthorized access protection is mandatory.

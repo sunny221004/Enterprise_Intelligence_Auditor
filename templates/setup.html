@@ -1,0 +1,52 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Setup | Enterprise AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="auth-body">
+
+<div class="auth-card">
+    <div class="auth-logo">E</div>
+
+    <span class="eyebrow">INITIAL CONFIGURATION</span>
+    <h1>Create Admin Account</h1>
+    <p class="auth-subtitle">
+        Set up your enterprise administrator account.
+    </p>
+
+    {% with messages = get_flashed_messages() %}
+        {% for message in messages %}
+            <div class="auth-alert">{{ message }}</div>
+        {% endfor %}
+    {% endwith %}
+
+    <form method="POST">
+        <label>Administrator Name</label>
+        <input type="text" name="username"
+               placeholder="Enter username" required maxlength="50">
+
+        <label>Email Address</label>
+        <input type="email" name="email"
+               placeholder="Enter email" required maxlength="254">
+
+        <label>Password</label>
+        <input type="password" name="password"
+               placeholder="Minimum 8 characters"
+               minlength="8" required>
+
+        <button type="submit" class="primary-btn auth-submit">
+            Create Administrator Account
+        </button>
+    </form>
+
+    <p class="auth-footer">
+        Enterprise Intelligence & Change Impact Auditor
+    </p>
+</div>
+
+</body>
+</html>

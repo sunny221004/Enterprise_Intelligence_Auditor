@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enterprise Intelligence Auditor</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<div class="app">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="brand">
+            <div class="brand-icon">E</div>
+            <div>
+                <h2>Enterprise<span>AI</span></h2>
+                <small>INTELLIGENCE SYSTEM</small>
+            </div>
+        </div>
+
+        <div class="menu-label">MAIN MENU</div>
+
+        <nav>
+            <a href="#" class="nav-link active" data-page="overview">▦ <span>Overview</span></a>
+            <a href="#" class="nav-link" data-page="documents">▤ <span>Documents</span></a>
+            <a href="#" class="nav-link" data-page="changes">⇄ <span>Change Analysis</span></a>
+            <a href="#" class="nav-link" data-page="risks">◈ <span>Risk Assessment</span></a>
+            <a href="#" class="nav-link" data-page="departments">▥ <span>Departments</span></a>
+            <a href="#" class="nav-link" data-page="reports">▧ <span>Audit Reports</span></a>
+        </nav>
+
+        <div class="menu-label">SYSTEM</div>
+        <nav>
+            <a href="#" class="nav-link" data-page="settings">⚙ <span>Settings</span></a>
+        </nav>
+
+        <div class="sidebar-bottom">
+            <div class="profile">
+                <div class="avatar">SP</div>
+                <div>
+                   <strong>{{ session.get('username', 'Admin') }}</strong>
+<small>{{ session.get('role', 'admin') }}</small>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main">
+
+        <header class="topbar">
+            <div>
+                <h2>Enterprise Dashboard</h2>
+                <p>Welcome back! Here's your business intelligence overview.</p>
+            </div>
+            <div class="top-actions">
+                <span class="system-status"><i></i> System Online</span>
+                <button class="icon-btn" title="Notifications">♧</button>
+                <form action="{{ url_for('logout') }}" method="POST">
+    <button class="icon-btn" type="submit">
+        Logout ↗
+    </button>
+</form>
+                <div class="avatar">SP</div>
+            </div>
+        </header>
+
+        <!-- OVERVIEW PAGE -->
+        <section class="page active" id="overview">
+
+            <div class="welcome">
+                <div>
+                    <span class="eyebrow">AI POWERED INTELLIGENCE</span>
+                    <h1>Monitor. Analyze. <span>Predict.</span></h1>
+                    <p>Understand enterprise changes and identify business risks before they happen.</p>
+                </div>
+                <button class="primary-btn" onclick="showPage('documents')">+ Analyze New Document</button>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-top"><span>Total Documents</span><span class="stat-icon blue">▤</span></div>
+                    <h2 id="docCount">128</h2>
+                    <small>Documents monitored</small>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-top"><span>Changes Detected</span><span class="stat-icon purple">⇄</span></div>
+                    <h2>46</h2>
+                    <small>Across all departments</small>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-top"><span>High Risks</span><span class="stat-icon red">⚠</span></div>
+                    <h2>08</h2>
+                    <small>Require attention</small>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-top"><span>Departments</span><span class="stat-icon green">▥</span></div>
+                    <h2>12</h2>
+                    <small>Under monitoring</small>
+                </div>
+            </div>
+
+            <div class="content-grid">
+                <div class="panel">
+                    <div class="panel-heading">
+                        <div>
+                            <h3>Risk Overview</h3>
+                            <p>Enterprise risk distribution</p>
+                        </div>
+                        <span class="tag">LIVE OVERVIEW</span>
+                    </div>
+
+                    <div class="risk-bars">
+                        <div class="bar-item">
+                            <div><span>High Risk</span><strong>25%</strong></div>
+                            <div class="bar"><i class="high" style="width:25%"></i></div>
+                        </div>
+                        <div class="bar-item">
+                            <div><span>Medium Risk</span><strong>45%</strong></div>
+                            <div class="bar"><i class="medium" style="width:45%"></i></div>
+                        </div>
+                        <div class="bar-item">
+                            <div><span>Low Risk</span><strong>30%</strong></div>
+                            <div class="bar"><i class="low" style="width:30%"></i></div>
+                        </div>
+                    </div>
+
+                    <div class="risk-summary">
+                        <div><b class="dot red-dot"></b> High <strong>08</strong></div>
+                        <div><b class="dot yellow-dot"></b> Medium <strong>14</strong></div>
+                        <div><b class="dot green-dot"></b> Low <strong>09</strong></div>
+                    </div>
+                </div>
+                <div class="panel" style="margin-top:20px">
+    <div class="panel-heading">
+        <div>
+            <h3>Saved Audit History</h3>
+            <p>Your previous document analysis records</p>
+        </div>
+        <button class="text-btn" onclick="loadHistory()">
+            Refresh History ↻
+        </button>
+    </div>
+
+    <div id="historyData">
+        <p class="muted">Click refresh to load history.</p>
+    </div>
+</div>
+
+                <div class="panel">
+                    <div class="panel-heading">
+                        <div>
+                            <h3>AI Intelligence</h3>
+                            <p>Automated system insights</p>
+                        </div>
+                        <span class="ai-badge">✦ AI</span>
+                    </div>
+
+                    <div class="insight">
+                        <div class="insight-icon">⚠</div>
+                        <div>
+                            <strong>Critical Risk Identified</strong>
+                            <p>3 changes require immediate review by management.</p>
+                        </div>
+                    </div>
+
+                    <div class="insight">
+                        <div class="insight-icon purple-bg">✦</div>
+                        <div>
+                            <strong>Policy Change Detected</strong>
+                            <p>New HR policy may affect employee operations.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel recent-panel">
+                <div class="panel-heading">
+                    <div>
+                        <h3>Recent Change Activities</h3>
+                        <p>Latest enterprise monitoring activities</p>
+                    </div>
+                    <button class="text-btn" onclick="showPage('changes')">View All →</button>
+                </div>
+
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>CHANGE TITLE</th>
+                                <th>DEPARTMENT</th>
+                                <th>RISK LEVEL</th>
+                                <th>STATUS</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Employee Attendance Policy</td>
+                                <td>Human Resources</td>
+                                <td><span class="risk high-label">High</span></td>
+                                <td><span class="status pending">Review Needed</span></td>
+                            </tr>
+                            <tr>
+                                <td>Database Security Update</td>
+                                <td>IT Department</td>
+                                <td><span class="risk medium-label">Medium</span></td>
+                                <td><span class="status completed">Analyzed</span></td>
+                            </tr>
+                            <tr>
+                                <td>Financial Approval Process</td>
+                                <td>Finance</td>
+                                <td><span class="risk low-label">Low</span></td>
+                                <td><span class="status completed">Completed</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- DOCUMENTS PAGE -->
+        <section class="page" id="documents">
+            <div class="page-heading">
+                <span class="eyebrow">DOCUMENT MANAGEMENT</span>
+                <h1>Document Analyzer</h1>
+                <p>Upload business documents for change and impact analysis.</p>
+            </div>
+
+            <div class="panel upload-panel">
+                <div class="upload-area" id="dropArea">
+                    <div class="upload-icon">⇧</div>
+                    <h2>Upload Your Document</h2>
+                    <p>Drag and drop your PDF, DOCX or TXT file here</p>
+                    <label class="primary-btn upload-button">
+                        Browse Files
+                        <input type="file" id="fileInput" accept=".pdf,.docx,.txt">
+                    </label>
+                    <small>Supported formats: PDF, DOCX, TXT</small>
+                </div>
+                <div id="fileInfo"></div>
+                <button class="primary-btn analyze-btn" id="analyzeBtn" disabled>✦ Analyze Document</button>
+                <div id="analysisResult"></div>
+            </div>
+        </section>
+
+        <!-- CHANGE ANALYSIS PAGE -->
+        <section class="page" id="changes">
+            <div class="page-heading">
+                <span class="eyebrow">CHANGE MANAGEMENT</span>
+                <h1>Change Analysis</h1>
+                <p>Identify and understand changes in enterprise documents.</p>
+            </div>
+            <div class="panel">
+                <h3>Change Comparison</h3>
+                <p class="muted">Upload the old and new versions of a policy to compare them.</p>
+                <div class="compare-grid">
+                    <label class="compare-box">
+                        <strong>Old Document</strong>
+                        <input type="file" id="oldFile" accept=".txt,.pdf,.docx">
+                    </label>
+                    <label class="compare-box">
+                        <strong>New Document</strong>
+                        <input type="file" id="newFile" accept=".txt,.pdf,.docx">
+                    </label>
+                </div>
+                <button class="primary-btn" onclick="compareDemo()">Compare Documents</button>
+                <div id="compareResult"></div>
+
+<hr style="border-color:#29354a;margin:25px 0">
+
+<div class="panel-heading">
+    <div>
+        <span class="eyebrow">ADVANCED INTELLIGENCE</span>
+        <h3 style="margin-top:10px">AI Change Impact Auditor</h3>
+        <p>Analyze business impact using NLP and machine learning techniques.</p>
+    </div>
+    <span class="ai-badge">✦ AI ENGINE</span>
+</div>
+
+<button class="primary-btn" id="aiImpactBtn"
+        onclick="runAIImpactAnalysis()">
+    ✦ Run Advanced AI Impact Analysis
+</button>
+
+<div id="aiImpactResult"></div>
+
+            </div>
+        </section>
+
+        <!-- RISK PAGE -->
+        <section class="page" id="risks">
+            <div class="page-heading">
+                <span class="eyebrow">RISK MANAGEMENT</span>
+                <h1>Risk Assessment</h1>
+                <p>Monitor enterprise risks and prioritize critical changes.</p>
+            </div>
+            <div class="panel">
+                <h3>Risk Register</h3>
+                <div class="risk-row"><span>Employee Policy Changes</span><span class="risk high-label">High Risk</span></div>
+                <div class="risk-row"><span>System Security Updates</span><span class="risk medium-label">Medium Risk</span></div>
+                <div class="risk-row"><span>Financial Workflow Changes</span><span class="risk low-label">Low Risk</span></div>
+            </div>
+        </section>
+
+        <!-- DEPARTMENTS PAGE -->
+        <section class="page" id="departments">
+            <div class="page-heading">
+                <span class="eyebrow">ORGANIZATION</span>
+                <h1>Departments</h1>
+                <p>Understand which teams are affected by business changes.</p>
+            </div>
+            <div class="department-grid">
+                <div class="panel"><h3>Human Resources</h3><p class="muted">8 changes monitored</p></div>
+                <div class="panel"><h3>Information Technology</h3><p class="muted">12 changes monitored</p></div>
+                <div class="panel"><h3>Finance</h3><p class="muted">6 changes monitored</p></div>
+                <div class="panel"><h3>Operations</h3><p class="muted">9 changes monitored</p></div>
+            </div>
+        </section>
+
+        <!-- REPORTS PAGE -->
+        <section class="page" id="reports">
+            <div class="page-heading">
+                <span class="eyebrow">REPORT CENTER</span>
+                <h1>Audit Reports</h1>
+                <p>Generate and review enterprise impact reports.</p>
+            </div>
+            <div class="panel">
+                <h3>Available Reports</h3>
+                <div class="risk-row"><span>Enterprise Risk Summary</span><button class="text-btn" onclick="window.print()">Print Report →</button></div>
+                <div class="risk-row"><span>Change Impact Overview</span><button class="text-btn" onclick="window.print()">Print Report →</button></div>
+            </div>
+        </section>
+
+        <!-- SETTINGS PAGE -->
+        <section class="page" id="settings">
+            <div class="page-heading">
+                <span class="eyebrow">CONFIGURATION</span>
+                <h1>Settings</h1>
+                <p>Manage your enterprise auditor workspace.</p>
+            </div>
+            <div class="panel">
+                <h3>Administrator Profile</h3>
+                <p>Sunny Pal</p>
+                <p class="muted">Enterprise Administrator</p>
+                <hr>
+                <p>System: Enterprise Intelligence Auditor</p>
+                <p>Version: 1.0.0</p>
+            </div>
+        </section>
+
+        <footer>© 2026 Enterprise Intelligence & Change Impact Auditor. All rights reserved.</footer>
+
+    </main>
+</div>
+
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

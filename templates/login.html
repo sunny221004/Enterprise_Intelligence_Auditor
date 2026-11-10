@@ -1,0 +1,72 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enterprise AI | Secure Login</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+
+</head>
+
+<body class="auth-body">
+
+    <div class="auth-card">
+
+      <div class="eia-brand">
+    <img src="{{ url_for('static', filename='eia-logo.png') }}"
+         alt="EIA Enterprise Intelligence Auditor">
+</div>
+
+        <span class="eyebrow">SECURE ENTERPRISE ACCESS</span>
+
+        <h1>Welcome Back</h1>
+
+        <p class="auth-subtitle">
+            Sign in to your intelligence dashboard.
+        </p>
+
+        {% with messages = get_flashed_messages() %}
+            {% for message in messages %}
+                <div class="auth-alert">{{ message }}</div>
+            {% endfor %}
+        {% endwith %}
+
+        <form method="POST" class="login-form">
+
+            <div class="form-group">
+                <label>Username</label>
+                <input
+                    type="text"
+                    name="username"
+                    placeholder="Enter username"
+                    required>
+            </div>
+
+            <div class="form-group">
+                <label>Password</label>
+                <input
+                    type="password"
+                    name="password"
+                    placeholder="Enter password"
+                    required>
+            </div>
+
+
+
+            <button type="submit" class="primary-btn auth-submit">
+                Login to Dashboard →
+            </button>
+
+        </form>
+
+        <div class="auth-footer">
+            Protected Enterprise Administrator Portal
+        </div>
+
+    </div>
+
+</body>
+</html>
