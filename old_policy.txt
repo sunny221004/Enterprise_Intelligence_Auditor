@@ -1,3 +1,0 @@
-Employee attendance starts at 10 AM.
-Employees receive 20 days of leave.
-Company database uses password authentication.
