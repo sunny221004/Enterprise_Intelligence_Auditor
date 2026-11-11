@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EIA | Admin Intelligence Dashboard</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#080d1b;color:#eaf0ff;font-family:Segoe UI,Arial,sans-serif}
+.admin-layout{display:flex;min-height:100vh}
+.sidebar{width:230px;flex-shrink:0;background:#0d1428;border-right:1px solid #253451;padding:22px 15px;display:flex;flex-direction:column}
+.brand{display:flex;align-items:center;gap:10px;padding:0 8px 24px;border-bottom:1px solid #253451}
+.brand img{width:44px;height:44px;object-fit:contain}.brand strong{display:block;font-size:18px;letter-spacing:1px}.brand small{color:#8296ba;font-size:10px;letter-spacing:2px}
+.nav-label{font-size:10px;letter-spacing:2px;color:#657b9e;margin:25px 10px 10px}
+.nav a{display:block;text-decoration:none;color:#aab9d5;padding:12px;border-radius:9px;font-size:13px;margin:4px 0}
+.nav a:hover,.nav a.active{color:#fff;background:linear-gradient(100deg,#123b62,#30245a);box-shadow:inset 3px 0 #16caff}
+.sidebar-foot{margin-top:auto;color:#657b9e;font-size:10px;line-height:1.8;padding:12px}
+.main{flex:1;min-width:0;padding:27px 30px;background:radial-gradient(ellipse at 85% 0%,#25205255,transparent 35%),radial-gradient(ellipse at 10% 30%,#063b5b44,transparent 35%),#080d1b}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:24px}
+.topbar h1{font-size:26px;margin:0 0 6px;color:#fff}.topbar p{font-size:12px;color:#8799b8;margin:0}
+.actions{display:flex;gap:9px;align-items:center;flex-wrap:wrap}.btn{display:inline-block;text-decoration:none;border:0;border-radius:9px;padding:11px 15px;background:linear-gradient(110deg,#087cf0,#7950ec);color:white;font-size:12px;font-weight:700;cursor:pointer}.btn.secondary{background:#17243d;border:1px solid #30476c}
+.welcome{border:1px solid #347bb766;border-radius:15px;padding:19px 22px;margin-bottom:20px;background:linear-gradient(110deg,#0c477344,#512c8740)}
+.welcome h2{font-size:18px;margin:0 0 5px}.welcome p{font-size:12px;color:#9db0d0;margin:0}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:15px;margin-bottom:20px}
+.stat,.panel{background:linear-gradient(145deg,#141f39,#10182b);border:1px solid #718dc52b;border-radius:15px;box-shadow:0 12px 30px #0003}
+.stat{padding:19px;position:relative;overflow:hidden}.stat:after{content:"";position:absolute;right:-35px;top:-40px;width:100px;height:100px;border-radius:50%;background:var(--glow);filter:blur(38px);opacity:.55}
+.stat small{color:#a3b4d2;font-size:12px;position:relative;z-index:1}.stat strong{display:block;font-size:31px;margin:13px 0 3px;color:#fff;position:relative;z-index:1}.stat span{font-size:10px;color:#7489ac}
+.blue{--glow:#008cff}.purple{--glow:#a04cff}.cyan{--glow:#00d9c4}.pink{--glow:#f04cbd}
+.charts{display:grid;grid-template-columns:1.5fr 1fr;gap:16px;margin-bottom:20px}
+.panel{padding:19px;min-width:0}.panel h3{font-size:14px;margin:0 0 16px;color:#edf3ff}.chart-box{height:245px;position:relative}
+.panel-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:14px}.tag{font-size:9px;color:#69d7ff;background:#0b9bd51c;border:1px solid #1b9bc644;padding:5px 9px;border-radius:20px}
+.tables{display:grid;grid-template-columns:1fr;gap:17px}
+.table-wrap{overflow-x:auto}.table{width:100%;min-width:650px;border-collapse:collapse}.table th{text-align:left;color:#8298bd;font-size:10px;letter-spacing:1px;padding:12px;border-bottom:1px solid #ffffff18}.table td{font-size:11px;color:#c5d1e7;padding:13px 12px;border-bottom:1px solid #ffffff0c}.table tr:hover td{background:#2689ff12}
+.role{display:inline-block;border-radius:20px;padding:5px 9px;background:#00c9e21b;color:#6be7ff;border:1px solid #00c9e244;font-size:9px;font-weight:700;text-transform:uppercase}
+.empty{color:#8298bd;font-size:12px;padding:15px 0}
+.footer{text-align:center;color:#536987;font-size:10px;padding:20px}
+@media(max-width:1100px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.charts{grid-template-columns:1fr}}
+@media(max-width:700px){.admin-layout{display:block}.sidebar{width:100%;padding:12px}.brand{padding-bottom:12px}.nav-label,.sidebar-foot{display:none}.nav{display:flex;overflow-x:auto;gap:5px;margin-top:10px}.nav a{white-space:nowrap}.main{padding:17px 13px}.stats{grid-template-columns:1fr 1fr}.topbar h1{font-size:21px}}
+@media(max-width:430px){.stats{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="admin-layout">
+<aside class="sidebar">
+  <div class="brand">
+    <img src="{{ url_for('static', filename='eia-logo.png') }}" alt="EIA">
+    <div><strong>EIA</strong><small>ADMIN INTELLIGENCE</small></div>
+  </div>
+  <div class="nav-label">WORKSPACE</div>
+  <nav class="nav">
+    <a class="active" href="#overview">▦ &nbsp; Overview</a>
+    <a href="#analytics">◒ &nbsp; Analytics</a>
+    <a href="#users">♙ &nbsp; User Accounts</a>
+    <a href="#logins">◷ &nbsp; Login Activity</a>
+    <a href="{{ url_for('home') }}">⌂ &nbsp; Main Dashboard</a>
+  </nav>
+  <div class="nav-label">SYSTEM</div>
+  <nav class="nav"><a href="#audits">◈ &nbsp; Audit Activity</a></nav>
+  <div class="sidebar-foot">ENTERPRISE INTELLIGENCE<br>Secure Administrator Portal<br>© 2026 EIA</div>
+</aside>
+
+<main class="main">
+  <header class="topbar">
+    <div><h1>Admin Intelligence Center</h1><p>Monitor registrations, logins and enterprise audit activity.</p></div>
+    <div class="actions">
+      <a class="btn secondary" href="{{ url_for('home') }}">↗ Main Dashboard</a>
+      <form action="{{ url_for('logout') }}" method="POST"><button class="btn" type="submit">Logout →</button></form>
+    </div>
+  </header>
+
+  <section id="overview" class="welcome">
+    <h2>Welcome to your command center</h2>
+    <p>Live overview generated from your EIA database records.</p>
+  </section>
+
+  <section class="stats">
+    <article class="stat blue"><small>Registered Users</small><strong>{{ total_users }}</strong><span>Standard user accounts</span></article>
+    <article class="stat purple"><small>Admin Accounts</small><strong>{{ total_admins }}</strong><span>Administrator accounts</span></article>
+    <article class="stat cyan"><small>Successful Logins</small><strong>{{ total_logins }}</strong><span>Recorded login events</span></article>
+    <article class="stat pink"><small>Audit Activities</small><strong>{{ total_audits | default(0, true) }}</strong><span>Document analysis and comparison events</span></article>
+  </section>
+
+  <section id="analytics" class="charts">
+    <article class="panel">
+      <div class="panel-head"><h3>Registration & Login Trends</h3><span class="tag">LAST 7 DAYS</span></div>
+      <div class="chart-box"><canvas id="trendChart"></canvas></div>
+    </article>
+    <article class="panel" id="audits">
+      <div class="panel-head"><h3>Audit Activity Mix</h3><span class="tag">DATABASE TOTALS</span></div>
+      <div class="chart-box"><canvas id="auditChart"></canvas></div>
+      {% if not audit_labels %}<p class="empty">No audit activity recorded yet.</p>{% endif %}
+    </article>
+  </section>
+
+  <section class="tables">
+    <article class="panel" id="users">
+      <div class="panel-head"><h3>♙ Registration History / User Accounts</h3><span class="tag">LATEST 100</span></div>
+      {% if users %}
+      <div class="table-wrap"><table class="table">
+        <thead><tr><th>ID</th><th>Full Name</th><th>Username</th><th>Email</th><th>Role</th><th>Registered At</th></tr></thead>
+        <tbody>{% for user in users %}<tr>
+          <td>{{ user.id }}</td><td>{{ user.full_name or '—' }}</td><td>{{ user.username }}</td><td>{{ user.email }}</td>
+          <td><span class="role">{{ user.role }}</span></td><td>{{ user.created_at }}</td>
+        </tr>{% endfor %}</tbody>
+      </table></div>
+      {% else %}<p class="empty">No user accounts found.</p>{% endif %}
+    </article>
+
+    <article class="panel" id="logins">
+      <div class="panel-head"><h3>◷ Successful Login History</h3><span class="tag">LATEST 100</span></div>
+      {% if login_history %}
+      <div class="table-wrap"><table class="table">
+        <thead><tr><th>Event ID</th><th>Full Name</th><th>Username</th><th>Email</th><th>Login Time</th></tr></thead>
+        <tbody>{% for item in login_history %}<tr>
+          <td>{{ item.id }}</td><td>{{ item.full_name or '—' }}</td><td>{{ item.username }}</td><td>{{ item.email }}</td><td>{{ item.logged_in_at }}</td>
+        </tr>{% endfor %}</tbody>
+      </table></div>
+      {% else %}<p class="empty">No login events recorded yet.</p>{% endif %}
+    </article>
+  </section>
+  <footer class="footer">Enterprise Intelligence Auditor · Secure Admin Environment</footer>
+</main>
+</div>
+
+<script>
+const labels = {{ chart_labels | default([], true) | tojson }};
+const registrationData = {{ registration_data | default([], true) | tojson }};
+const loginData = {{ login_data | default([], true) | tojson }};
+const auditLabels = {{ audit_labels | default([], true) | tojson }};
+const auditData = {{ audit_data | default([], true) | tojson }};
+
+Chart.defaults.color = '#9aacca';
+Chart.defaults.font.family = 'Segoe UI, Arial, sans-serif';
+
+new Chart(document.getElementById('trendChart'), {
+  type: 'line',
+  data: {
+    labels,
+    datasets: [
+      {label:'Registrations', data:registrationData, borderColor:'#21c8ff',
+       backgroundColor:'rgba(33,200,255,.12)', fill:true, tension:.4, borderWidth:2},
+      {label:'Logins', data:loginData, borderColor:'#a879ff',
+       backgroundColor:'rgba(168,121,255,.08)', fill:true, tension:.4, borderWidth:2}
+    ]
+  },
+  options: {
+    responsive:true, maintainAspectRatio:false,
+    plugins:{legend:{labels:{usePointStyle:true,boxWidth:7}}},
+    scales:{
+      x:{grid:{color:'rgba(255,255,255,.05)'}},
+      y:{beginAtZero:true,ticks:{precision:0},grid:{color:'rgba(255,255,255,.07)'}}
+    }
+  }
+});
+
+new Chart(document.getElementById('auditChart'), {
+  type:'doughnut',
+  data:{
+    labels:auditLabels.length ? auditLabels : ['No audit data'],
+    datasets:[{
+      data:auditData.length ? auditData : [1],
+      backgroundColor:['#21c8ff','#a879ff','#26d6b5','#ffbd59','#f16bc4','#6685ff'],
+      borderColor:'#111a2d', borderWidth:3, hoverOffset:8
+    }]
+  },
+  options:{
+    responsive:true, maintainAspectRatio:false, cutout:'68%',
+    plugins:{legend:{position:'bottom',labels:{usePointStyle:true,padding:14,boxWidth:7}}}
+  }
+});
+</script>
+</body>
+</html>

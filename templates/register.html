@@ -1,0 +1,87 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EIA | Create Account</title>
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body class="auth-body">
+
+    <div class="auth-card">
+
+        <div class="eia-brand">
+            <img src="{{ url_for('static', filename='eia-logo.png') }}"
+                 alt="EIA Enterprise Intelligence Auditor">
+        </div>
+
+        <span class="eyebrow">SECURE ENTERPRISE REGISTRATION</span>
+
+        <h1>Create Account</h1>
+
+        <p class="auth-subtitle">
+            Join the Enterprise Intelligence Auditor platform.
+        </p>
+
+        {% with messages = get_flashed_messages() %}
+            {% for message in messages %}
+                <div class="auth-alert">{{ message }}</div>
+            {% endfor %}
+        {% endwith %}
+
+        <form method="POST" class="login-form">
+
+            <div class="form-group">
+                <label>Full Name</label>
+                <input type="text" name="full_name"
+                       placeholder="Enter your full name" required>
+            </div>
+
+            <div class="form-group">
+                <label>Email Address</label>
+                <input type="email" name="email"
+                       placeholder="Enter your email" required>
+            </div>
+
+            <div class="form-group">
+                <label>Username</label>
+                <input type="text" name="username"
+                       placeholder="Create username" required>
+            </div>
+
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" name="password"
+                       placeholder="Minimum 8 characters"
+                       minlength="8" required>
+            </div>
+
+            <div class="form-group">
+                <label>Confirm Password</label>
+                <input type="password" name="confirm_password"
+                       placeholder="Confirm your password"
+                       minlength="8" required>
+            </div>
+
+            <button type="submit" class="primary-btn auth-submit">
+                Create My Account →
+            </button>
+
+        </form>
+
+        <div class="create-account">
+            Already have an account?
+            <a href="{{ url_for('login') }}">Login Here</a>
+        </div>
+
+        <div class="auth-footer">
+            Protected Enterprise Administrator Portal
+        </div>
+
+    </div>
+
+</body>
+</html>

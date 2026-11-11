@@ -1876,3 +1876,37 @@ body.auth-body {
     object-position: center !important;
 }
 
+
+/* Forgot Password and Create Account */
+
+.auth-links {
+    display: flex;
+    justify-content: flex-end;
+    margin: -8px 0 18px;
+}
+
+.auth-links a,
+.create-account a {
+    color: #83caff;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: 0.3s;
+}
+
+.auth-links a:hover,
+.create-account a:hover {
+    color: #d5a0ff;
+    text-decoration: underline;
+}
+
+.create-account {
+    text-align: center;
+    margin-top: 22px;
+    color: #b8c5dc;
+    font-size: 13px;
+}
+
+.create-account a {
+    margin-left: 4px;
+}

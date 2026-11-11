@@ -3,7 +3,7 @@ from ai_engine import analyze_impact
 from contextlib import contextmanager
 from flask import (
     Flask, render_template, request,
-    jsonify, redirect, url_for, session, flash
+    jsonify, redirect, url_for, session, flash, current_app
 )
 from werkzeug.security import (
     generate_password_hash, check_password_hash
@@ -17,16 +17,12 @@ import sqlite3
 import io
 import os
 import json
+import smtplib
+from email.message import EmailMessage
+from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
+from datetime import date, timedelta
 
 app = Flask(__name__)
-
-# SECURITY CONFIGURATION
-app.secret_key = os.environ.get(
-    "SECRET_KEY", "development-only-change-this-secret"
-)
-
-app.config["MAX_CONTENT_LENGTH"] = 10 * 1024 * 1024
-app.config["SESSION_COOKIE_HTTPONLY"] = True
 
 # SECURITY CONFIGURATION
 app.secret_key = os.environ.get(
@@ -76,10 +72,19 @@ def init_db():
                 username TEXT UNIQUE NOT NULL,
                 email TEXT UNIQUE NOT NULL,
                 password TEXT NOT NULL,
-                role TEXT DEFAULT 'admin',
+                role TEXT NOT NULL DEFAULT 'user',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
+
+        # Add full_name column safely for existing databases
+        columns = [
+            row["name"]
+            for row in db.execute("PRAGMA table_info(users)").fetchall()
+        ]
+
+        if "full_name" not in columns:
+            db.execute("ALTER TABLE users ADD COLUMN full_name TEXT")
 
         db.execute("""
             CREATE TABLE IF NOT EXISTS audit_logs (
@@ -91,6 +96,16 @@ def init_db():
                 risk_score INTEGER,
                 result TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY(user_id) REFERENCES users(id)
+            )
+        """)
+
+        # Store each successful login for the Admin-only activity dashboard.
+        db.execute("""
+            CREATE TABLE IF NOT EXISTS login_events (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                logged_in_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY(user_id) REFERENCES users(id)
             )
         """)
@@ -115,6 +130,26 @@ def login_required(function):
                 }), 401
 
             return redirect(url_for("login"))
+
+        return function(*args, **kwargs)
+
+    return wrapper
+
+
+def admin_required(function):
+    """Allow access only to a logged-in account whose database role is admin."""
+    @wraps(function)
+    @login_required
+    def wrapper(*args, **kwargs):
+        # Re-check the role from the database instead of trusting only the session.
+        with get_db() as db:
+            user = db.execute(
+                "SELECT role FROM users WHERE id = ?",
+                (session.get("user_id"),)
+            ).fetchone()
+
+        if not user or user["role"] != "admin":
+            return "Forbidden: Admin access only.", 403
 
         return function(*args, **kwargs)
 
@@ -159,6 +194,11 @@ def setup():
                 session["username"] = username
                 session["role"] = "admin"
 
+                db.execute(
+                    "INSERT INTO login_events (user_id) VALUES (?)",
+                    (cursor.lastrowid,)
+                )
+
                 return redirect(url_for("home"))
 
             except sqlite3.IntegrityError:
@@ -199,12 +239,64 @@ def login():
             session["username"] = user["username"]
             session["role"] = user["role"]
 
+            with get_db() as db:
+                db.execute(
+                    "INSERT INTO login_events (user_id) VALUES (?)",
+                    (user["id"],)
+                )
+
             return redirect(url_for("home"))
 
         flash("Invalid username or password.")
 
     return render_template("login.html")
 
+# CREATE ACCOUNT
+
+@app.route("/register", methods=["GET", "POST"], endpoint="create_account")
+def register():
+
+    if request.method == "POST":
+
+        full_name = request.form.get("full_name", "").strip()
+        username = request.form.get("username", "").strip()
+        email = request.form.get("email", "").strip().lower()
+        password = request.form.get("password", "")
+        confirm_password = request.form.get("confirm_password", "")
+
+        if not full_name or not username or not email or not password:
+            flash("Please fill in all fields.")
+            return redirect(url_for("create_account"))
+
+        if len(password) < 8:
+            flash("Password must be at least 8 characters.")
+            return redirect(url_for("create_account"))
+
+        if password != confirm_password:
+            flash("Passwords do not match.")
+            return redirect(url_for("create_account"))
+
+        try:
+            with get_db() as db:
+                db.execute("""
+                    INSERT INTO users
+                    (full_name, username, email, password, role)
+                    VALUES (?, ?, ?, ?, 'user')
+                """, (
+                    full_name,
+                    username,
+                    email,
+                    generate_password_hash(password)
+                ))
+
+            flash("Account created successfully. Please login.")
+            return redirect(url_for("login"))
+
+        except sqlite3.IntegrityError:
+            flash("Username or email already exists.")
+            return redirect(url_for("create_account"))
+
+    return render_template("register.html")
 
 @app.route("/logout", methods=["POST"])
 @login_required
@@ -384,6 +476,95 @@ def save_audit(activity, filename, risk, result):
 def home():
 
     return render_template("index.html")
+
+
+@app.route("/admin")
+@admin_required
+def admin_dashboard():
+    """Admin-only overview with database-backed dashboard analytics."""
+    today = date.today()
+    chart_dates = [
+        today - timedelta(days=offset)
+        for offset in range(6, -1, -1)
+    ]
+    chart_labels = [day.strftime("%d %b") for day in chart_dates]
+    date_keys = [day.isoformat() for day in chart_dates]
+
+    with get_db() as db:
+        total_users = db.execute(
+            "SELECT COUNT(*) FROM users WHERE role = 'user'"
+        ).fetchone()[0]
+        total_admins = db.execute(
+            "SELECT COUNT(*) FROM users WHERE role = 'admin'"
+        ).fetchone()[0]
+        total_logins = db.execute(
+            "SELECT COUNT(*) FROM login_events"
+        ).fetchone()[0]
+        total_audits = db.execute(
+            "SELECT COUNT(*) FROM audit_logs"
+        ).fetchone()[0]
+
+        users = db.execute("""
+            SELECT id, full_name, username, email, role, created_at
+            FROM users
+            ORDER BY id DESC
+            LIMIT 100
+        """).fetchall()
+
+        login_history = db.execute("""
+            SELECT login_events.id, users.full_name, users.username,
+                   users.email, login_events.logged_in_at
+            FROM login_events
+            JOIN users ON users.id = login_events.user_id
+            ORDER BY login_events.id DESC
+            LIMIT 100
+        """).fetchall()
+
+        registration_rows = db.execute("""
+            SELECT date(created_at) AS day, COUNT(*) AS total
+            FROM users
+            WHERE date(created_at) >= date('now', '-6 days')
+            GROUP BY date(created_at)
+        """).fetchall()
+
+        login_rows = db.execute("""
+            SELECT date(logged_in_at) AS day, COUNT(*) AS total
+            FROM login_events
+            WHERE date(logged_in_at) >= date('now', '-6 days')
+            GROUP BY date(logged_in_at)
+        """).fetchall()
+
+        audit_rows = db.execute("""
+            SELECT activity, COUNT(*) AS total
+            FROM audit_logs
+            GROUP BY activity
+            ORDER BY total DESC
+            LIMIT 6
+        """).fetchall()
+
+    registrations_by_day = {row["day"]: row["total"] for row in registration_rows}
+    logins_by_day = {row["day"]: row["total"] for row in login_rows}
+
+    registration_data = [registrations_by_day.get(day, 0) for day in date_keys]
+    login_data = [logins_by_day.get(day, 0) for day in date_keys]
+
+    audit_labels = [row["activity"] for row in audit_rows]
+    audit_data = [row["total"] for row in audit_rows]
+
+    return render_template(
+        "admin_dashboard.html",
+        total_users=total_users,
+        total_admins=total_admins,
+        total_logins=total_logins,
+        total_audits=total_audits,
+        users=users,
+        login_history=login_history,
+        chart_labels=chart_labels,
+        registration_data=registration_data,
+        login_data=login_data,
+        audit_labels=audit_labels,
+        audit_data=audit_data
+    )
 
 
 # ---------------------------------
@@ -710,8 +891,126 @@ def ai_impact_audit():
             "error": "Analysis failed. Please check the documents."
         }), 500
 
+# ---------------------------------
+# FORGOT PASSWORD / SECURE RESET
+# ---------------------------------
+
+RESET_TOKEN_MAX_AGE = 1800  # 30 minutes
+
+
+def make_reset_token(email):
+    serializer = URLSafeTimedSerializer(app.secret_key)
+    return serializer.dumps(email, salt="eia-password-reset")
+
+
+def read_reset_token(token):
+    serializer = URLSafeTimedSerializer(app.secret_key)
+    try:
+        return serializer.loads(
+            token,
+            salt="eia-password-reset",
+            max_age=RESET_TOKEN_MAX_AGE
+        )
+    except (SignatureExpired, BadSignature):
+        return None
+
+
+def send_reset_email(receiver_email, reset_link):
+    mail_username = os.environ.get("MAIL_USERNAME")
+    mail_password = os.environ.get("MAIL_PASSWORD")
+
+    if not mail_username or not mail_password:
+        raise RuntimeError(
+            "Email is not configured. Set MAIL_USERNAME and MAIL_PASSWORD."
+        )
+
+    message = EmailMessage()
+    message["Subject"] = "EIA Password Reset Request"
+    message["From"] = mail_username
+    message["To"] = receiver_email
+    message.set_content(
+        "We received a request to reset your EIA account password.\n\n"
+        f"Open this link within 30 minutes to choose a new password:\n{reset_link}\n\n"
+        "If you did not request this, you can ignore this email."
+    )
+
+    with smtplib.SMTP("smtp.gmail.com", 587, timeout=20) as server:
+        server.ehlo()
+        server.starttls()
+        server.ehlo()
+        server.login(mail_username, mail_password)
+        server.send_message(message)
+
+
+@app.route("/forgot-password", methods=["GET", "POST"])
+def forgot_password():
+    print("FORGOT PASSWORD METHOD:", request.method)
+    if request.method == "POST":
+        email = request.form.get("email", "").strip().lower()
+
+        if not email:
+            flash("Please enter your email address.")
+            return redirect(url_for("forgot_password"))
+
+        with get_db() as db:
+            user = db.execute(
+                "SELECT email FROM users WHERE lower(email) = ?",
+                (email,)
+            ).fetchone()
+
+        # Use the same public response whether the account exists or not.
+        if user:
+            try:
+                token = make_reset_token(user["email"])
+                reset_link = url_for(
+                    "reset_password", token=token, _external=True
+                )
+                send_reset_email(user["email"], reset_link)
+            except Exception:
+                app.logger.exception("Password reset email could not be sent")
+                flash("We could not send the reset email. Please check the mail configuration and try again.")
+                return redirect(url_for("forgot_password"))
+
+        flash("If an account uses that email, password reset instructions have been sent.")
+        return redirect(url_for("forgot_password"))
+
+    return render_template("forgot_password.html")
+
+
+@app.route("/reset-password/<token>", methods=["GET", "POST"])
+def reset_password(token):
+    email = read_reset_token(token)
+    if not email:
+        flash("This reset link is invalid or has expired. Please request a new one.")
+        return redirect(url_for("forgot_password"))
+
+    if request.method == "POST":
+        password = request.form.get("password", "")
+        confirm_password = request.form.get("confirm_password", "")
+
+        if len(password) < 8:
+            flash("Password must be at least 8 characters.")
+            return redirect(url_for("reset_password", token=token))
+
+        if password != confirm_password:
+            flash("Passwords do not match.")
+            return redirect(url_for("reset_password", token=token))
+
+        with get_db() as db:
+            cursor = db.execute(
+                "UPDATE users SET password = ? WHERE lower(email) = ?",
+                (generate_password_hash(password), email.lower())
+            )
+
+        if cursor.rowcount == 0:
+            flash("Account not found. Please request a new reset link.")
+            return redirect(url_for("forgot_password"))
+
+        flash("Your password has been reset. Please login with your new password.")
+        return redirect(url_for("login"))
+
+    return render_template("reset_password.html")
 
 
 if __name__ == "__main__":
-
     app.run(debug=True)
