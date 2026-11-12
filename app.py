@@ -596,7 +596,34 @@ def admin_dashboard():
     )
 
 
-# ---------------------------------
+@app.route("/admin/audits")
+def admin_audits():
+    if not session.get("user_id") or session.get("role") != "admin":
+        flash("Admin access required.")
+        return redirect(url_for("login"))
+
+    with get_db() as db:
+        audit_history = db.execute("""
+            SELECT
+                audit_logs.id,
+                users.full_name,
+                users.username,
+                audit_logs.activity,
+                audit_logs.filename,
+                audit_logs.risk_level,
+                audit_logs.risk_score,
+                audit_logs.created_at
+            FROM audit_logs
+            JOIN users ON users.id = audit_logs.user_id
+            ORDER BY audit_logs.id DESC
+            LIMIT 100
+        """).fetchall()
+
+    return render_template(
+        "audit_activity.html",
+        audit_history=audit_history
+    )
+
 # DOCUMENT ANALYSIS
 # ---------------------------------
 
@@ -969,13 +996,44 @@ def send_reset_email(receiver_email, reset_link):
         server.ehlo()
         server.login(mail_username, mail_password)
         server.send_message(message)
+        
+        
+def send_username_email(receiver_email, username):
+    mail_username = os.environ.get("MAIL_USERNAME")
+    mail_password = os.environ.get("MAIL_PASSWORD")
+
+    if not mail_username or not mail_password:
+        raise RuntimeError("Email configuration is missing.")
+
+    message = EmailMessage()
+    message["Subject"] = "EIA - Username Recovery"
+    message["From"] = mail_username
+    message["To"] = receiver_email
+
+    message.set_content(
+        "Hello,\n\n"
+        "Your EIA account username is:\n\n"
+        f"Username: {username}\n\n"
+        "If you did not request this, please ignore this email."
+    )
+
+    with smtplib.SMTP("smtp.gmail.com", 587, timeout=20) as server:
+        server.ehlo()
+        server.starttls()
+        server.ehlo()
+        server.login(mail_username, mail_password)
+        server.send_message(message)
+
 
 
 @app.route("/forgot-password", methods=["GET", "POST"])
 def forgot_password():
     print("FORGOT PASSWORD METHOD:", request.method)
+
     if request.method == "POST":
         email = request.form.get("email", "").strip().lower()
+        print("RESET REQUEST RECEIVED FOR:", email)
+
 
         if not email:
             flash("Please enter your email address.")
@@ -995,7 +1053,9 @@ def forgot_password():
                     "reset_password", token=token, _external=True
                 )
                 send_reset_email(user["email"], reset_link)
-            except Exception:
+                print("RESET EMAIL SENT SUCCESSFULLY!")
+            except Exception as e:
+                print("EMAIL ERROR:", repr(e))
                 app.logger.exception("Password reset email could not be sent")
                 flash("We could not send the reset email. Please check the mail configuration and try again.")
                 return redirect(url_for("forgot_password"))
@@ -1004,6 +1064,45 @@ def forgot_password():
         return redirect(url_for("forgot_password"))
 
     return render_template("forgot_password.html")
+
+
+@app.route("/forgot-username", methods=["GET", "POST"])
+def forgot_username():
+
+    if request.method == "POST":
+        email = request.form.get("email", "").strip().lower()
+
+        if not email:
+            flash("Please enter your registered email.")
+            return redirect(url_for("forgot_username"))
+
+        with get_db() as db:
+            user = db.execute(
+                """
+                SELECT username, email
+                FROM users
+                WHERE lower(email) = %s
+                """,
+                (email,)
+            ).fetchone()
+
+        if user:
+            try:
+                send_username_email(
+                    user["email"],
+                    user["username"]
+                )
+            except Exception:
+                app.logger.exception("Username recovery email failed")
+
+        flash(
+            "If an account uses that email, "
+            "username recovery instructions have been sent."
+        )
+
+        return redirect(url_for("forgot_username"))
+
+    return render_template("forgot_username.html")
 
 
 @app.route("/reset-password/<token>", methods=["GET", "POST"])

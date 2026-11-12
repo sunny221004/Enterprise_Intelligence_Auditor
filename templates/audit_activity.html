@@ -1,0 +1,188 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audit Activity | EIA</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+
+    <style>
+        .audit-page {
+            min-height: 100vh;
+            padding: 30px;
+            color: white;
+        }
+
+        .audit-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .audit-header h1 {
+            font-size: 28px;
+            margin: 0 0 8px;
+        }
+
+        .audit-header p {
+            color: #b9d8ff;
+            margin: 0;
+        }
+
+        .audit-card {
+            background: rgba(12, 42, 110, 0.75);
+            border: 1px solid rgba(0, 200, 255, 0.5);
+            border-radius: 16px;
+            padding: 22px;
+            box-shadow: 0 0 18px rgba(0, 170, 255, 0.15);
+        }
+
+        .audit-table-wrap {
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        .audit-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 850px;
+        }
+
+        .audit-table th,
+        .audit-table td {
+            padding: 15px 12px;
+            text-align: left;
+            border-bottom: 1px solid rgba(150, 200, 255, 0.2);
+            font-size: 13px;
+        }
+
+        .audit-table th {
+            color: #42dfff;
+            font-weight: 700;
+        }
+
+        .audit-table tr:hover {
+            background: rgba(0, 190, 255, 0.08);
+        }
+
+        .risk-badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 20px;
+            background: rgba(0, 190, 255, 0.15);
+            color: #54e5ff;
+        }
+
+        .back-btn {
+            display: inline-block;
+            padding: 11px 18px;
+            border-radius: 9px;
+            background: linear-gradient(100deg, #078cff, #a000ff);
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 45px 15px;
+            color: #b9d8ff;
+        }
+
+        @media(max-width: 600px) {
+            .audit-page {
+                padding: 15px;
+            }
+            .audit-header h1 {
+                font-size: 22px;
+            }
+        }
+    </style>
+</head>
+
+<body class="auth-body">
+
+    <main class="audit-page">
+
+        <header class="audit-header">
+            <div>
+                <h1>Audit Activity Center</h1>
+                <p>Monitor and review enterprise system activities.</p>
+            </div>
+
+            <a href="{{ url_for('admin_dashboard') }}"
+               class="back-btn">
+                ← Back to Dashboard
+            </a>
+        </header>
+
+        <section class="audit-card">
+
+            <h2>Activity History</h2>
+
+            <p>Latest 100 recorded audit activities</p>
+
+            {% if audit_history %}
+
+            <div class="audit-table-wrap">
+                <table class="audit-table">
+
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Full Name</th>
+                            <th>Username</th>
+                            <th>Activity</th>
+                            <th>File Name</th>
+                            <th>Risk Level</th>
+                            <th>Risk Score</th>
+                            <th>Date & Time</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {% for row in audit_history %}
+                        <tr>
+                            <td>{{ row.id }}</td>
+                            <td>{{ row.full_name or '-' }}</td>
+                            <td>{{ row.username or '-' }}</td>
+                            <td>{{ row.activity or '-' }}</td>
+                            <td>{{ row.filename or '-' }}</td>
+                            <td>
+                                <span class="risk-badge">
+                                    {{ row.risk_level or 'N/A' }}
+                                </span>
+                            </td>
+                            <td>{{ row.risk_score if row.risk_score is not none else '-' }}</td>
+                            <td>{{ row.created_at }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+
+                </table>
+            </div>
+
+            {% else %}
+
+            <div class="empty-state">
+                <h3>No Audit Activity Found</h3>
+                <p>
+                    No document analysis or comparison activity
+                    has been recorded yet.
+                </p>
+            </div>
+
+            {% endif %}
+
+        </section>
+
+    </main>
+
+</body>
+</html>

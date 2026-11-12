@@ -1,0 +1,117 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Forgot Username | EIA</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+
+    <style>
+        .username-logo-box {
+            width: 100%;
+            height: 190px;
+            background: #050b2d;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            margin-bottom: 35px;
+            box-sizing: border-box;
+            padding: 12px;
+        }
+
+        .username-logo-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+        }
+
+        .username-description {
+            margin-bottom: 25px;
+            line-height: 1.5;
+        }
+
+        .username-footer {
+            text-align: center;
+            margin-top: 28px;
+        }
+
+        .username-footer a {
+            text-decoration: none;
+        }
+    </style>
+</head>
+
+<body class="auth-body">
+
+    <div class="auth-card">
+
+        <!-- Large EIA Logo Banner -->
+        <div class="username-logo-box">
+            <img
+                src="{{ url_for('static', filename='eia-logo.png') }}"
+                alt="Enterprise Intelligence Auditor Logo">
+        </div>
+
+        <!-- Username Recovery -->
+        <div class="auth-content">
+
+            <p class="auth-subtitle">ACCOUNT RECOVERY</p>
+
+            <h1>Forgot Username?</h1>
+
+            <p class="auth-description username-description">
+                Enter your registered email to recover your username.
+            </p>
+
+            <!-- Messages -->
+            {% with messages = get_flashed_messages() %}
+                {% for message in messages %}
+                    <div class="flash-message">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endwith %}
+
+            <!-- Recovery Form -->
+            <form method="POST" class="login-form">
+
+                <div class="form-group">
+                    <label for="email">Registered Email</label>
+
+                    <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        placeholder="Enter your registered email"
+                        required>
+                </div>
+
+                <button type="submit"
+                        class="primary-btn auth-submit">
+                    Recover Username →
+                </button>
+
+            </form>
+
+            <div class="username-footer">
+                <a href="{{ url_for('login') }}">
+                    ← Back to Login
+                </a>
+            </div>
+
+            <div class="auth-footer">
+                Your username will be sent to your registered email.
+            </div>
+
+        </div>
+    </div>
+
+</body>
+</html>
